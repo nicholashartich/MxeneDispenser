@@ -161,7 +161,7 @@ void setup() {
   pinMode(dirPinBelt, OUTPUT);
   pinMode(stepPinBelt, OUTPUT);
 
-  Serial.begin(9600);
+  Serial.begin(19200);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -484,7 +484,7 @@ void loop() {
       }
 
       counterSpeedUpdates = 0;
-      /*
+      
     // print statistics
        // Get the current positions of the motors
     long armPosition = armStepper.currentPosition();        // Current position of arm stepper (steps)
@@ -499,18 +499,18 @@ void loop() {
     float angularSpeed = beltStepper.speed() * (2 * PI) / stepsPerRevolution; // Convert steps/s to rad/s
 
     // Output the motor positions and speeds
-    Serial.print("Arm Position: "); Serial.print(armPosition); Serial.print(" steps, ");
-    Serial.print("Linear Speed: "); Serial.print(linearSpeed); Serial.println(" mm/s");
+    Serial.print(F("Arm Position: ")); Serial.print(armPosition); Serial.print(F(" steps, "));
+    Serial.print(F("Linear Speed: ")); Serial.print(linearSpeed); Serial.println(F(" mm/s"));
 
-    Serial.print("Plunger Position: "); Serial.println(plungerPosition); Serial.println(" steps");
+    Serial.print(F("Plunger Position: ")); Serial.println(plungerPosition); Serial.println(F(" steps"));
 
-    Serial.print("Belt Position: "); Serial.print(beltPosition); Serial.print(" steps, ");
-    Serial.print("Angular Speed: "); Serial.print(angularSpeed); Serial.println(" rad/s");
+    Serial.print(F("Belt Position: ")); Serial.print(beltPosition); Serial.print(F(" steps, "));
+    Serial.print(F("Angular Speed: ")); Serial.print(angularSpeed); Serial.println(F(" rad/s"));
 
     // Calculate and display the current shear rate
     float currentShearRate = sqrt(pow(linearSpeed, 2) + pow(angularSpeed * currentRadius, 2));
-    Serial.print("Current Shear Rate: "); Serial.print(currentShearRate); Serial.println(" 1/s");
-*/
+    Serial.print(F("Current Shear Rate: ")); Serial.print(currentShearRate); Serial.println(F(" 1/s"));
+
     }
   }
 }
