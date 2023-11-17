@@ -391,6 +391,11 @@ void loop() {
 
       Serial.println("starting");
 
+         // important to reset the position of the steppers to 0 after zeroing
+      beltStepper.setCurrentPosition(0);
+      plungerStepper.setCurrentPosition(0);
+      armStepper.setCurrentPosition(0);
+
       // belt speed is variable, start with an initial speed
       beltStepper.setMaxSpeed(200);
       beltStepper.setSpeed(200);  // initial speed
@@ -413,10 +418,7 @@ void loop() {
       armStepper.moveTo(10000);
 
 
-      // important to reset the position of the steppers to 0 after zeroing
-      beltStepper.setCurrentPosition(0);
-      plungerStepper.setCurrentPosition(0);
-      armStepper.setCurrentPosition(0);
+   
     }
 
 
@@ -430,6 +432,11 @@ void loop() {
 
     // Calculate the current radius from the center to the nozzle
     float currentRadius = armStepper.currentPosition() * mmPerStep;  // Convert steps to mm
+
+       // Ensure currentRadius is not zero to avoid division by zero
+    if (currentRadius == 0) {
+        currentRadius = 0.01;  // Set a small but non-zero value
+    }
 
     // Calculate the current angle of the dish based on its steps
     float currentAngle = beltStepper.currentPosition() * (360.0 / stepsPerRevolution);  // Convert steps to degrees
@@ -445,6 +452,8 @@ void loop() {
     float angularComponent = pow(targetShearRate, 2) - pow(linearSpeed, 2);
     angularComponent = max(angularComponent, 0.0f);
     float angularVelocity = sqrt(angularComponent) / currentRadius;  // Angular velocity in rad/s
+
+   
 
     // Convert angular velocity to steps per second for the belt stepper
     float beltStepperSpeed = angularVelocity * stepsPerRevolution / (2 * PI);  // Convert rad/s to steps/s
