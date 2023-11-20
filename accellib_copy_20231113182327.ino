@@ -74,12 +74,18 @@ bool booting = true;  // nano was just powered up
 const float dishRadius = 100.0;      // Radius of the dish in mm
 const int stepsPerRevolution = 200;  // Steps per revolution for the stepper motor
 const float mmPerStep = 0.01;        // Movement in mm per step for the extruder
-//const float spiralSpacing = 2.0;     // Desired spacing between spiral arms in mm
-int spiralVerticalOffset = 5;        // Vertical offset for the spiral, in pixels
+
+
 const float tuningVariableBelt = 0.01;  // Tuning variable for the belt motor
-const float tuningVariableArm = 1.0; // Tuning variable for the Arm 
-/*removed target shear rate */ 
-const float desiredSpeed = 200.0; // 
+
+const float tuningConstant = 1.0;       // Tuning variable for additional adjustment
+// constants for belt speed calculations
+const float shearSpeed = 200.0;
+const float coilSpacing = 0.5;  // Desired spacing between spiral arms in mm
+const float tuningVariableArm = shearSpeed * coilSpacing * tuningConstant;
+
+
+
 
 // Define motor interface type
 // 1 means a stepper driver (with Step and Direction pins)
@@ -111,9 +117,10 @@ static const unsigned char PROGMEM logo_bmp[] = { 0b00000000, 0b11000000,
 
 //oled animation
 
-float angle = 0.0;            // Current angle for the spiral
-float radiusIncrement = 1.2;  // Increment of radius per dot
-float maxRadius;              // Maximum radius for the spiral
+float angle = 0.0;             // Current angle for the spiral
+float radiusIncrement = 1.2;   // Increment of radius per dot
+float maxRadius;               // Maximum radius for the spiral
+int spiralVerticalOffset = 5;  // Vertical offset for the spiral, in pixels
 
 
 
@@ -392,7 +399,7 @@ void loop() {
 
       Serial.println("starting");
 
-         // important to reset the position of the steppers to 0 after zeroing
+      // important to reset the position of the steppers to 0 after zeroing
       beltStepper.setCurrentPosition(0);
       plungerStepper.setCurrentPosition(0);
       armStepper.setCurrentPosition(0);
@@ -400,7 +407,7 @@ void loop() {
       // belt speed is not variable, start with a dispense speed that would target 15 minute dispense times (Controls dish rotation)
       beltStepper.setMaxSpeed(200);
       beltStepper.setSpeed(200);  // initial speed
-      beltStepper.moveTo(5000);   // todo: calculate the number of steps depending on mmPerSteps to go to end of dish 
+      beltStepper.moveTo(5000);   // todo: calculate the number of steps depending on mmPerSteps to go to end of dish
                                   /// need to travel 10 cm
 
 
@@ -417,9 +424,6 @@ void loop() {
       armStepper.setAcceleration(10000);  // Set some acceleration, make this high, so that stepper reafhes speed quickly
       // travel 10cm i.e. 10000 steps
       armStepper.moveTo(10000);
-
-
-   
     }
 
 
@@ -433,14 +437,14 @@ void loop() {
 
     // Calculate the current radius from the center to the nozzle
     float currentRadius = armStepper.currentPosition() * mmPerStep;  // Convert steps to mm
-
-       // Ensure currentRadius is not zero to avoid division by zero
-    if (currentRadius == 0) {
-        currentRadius = 0.0001;  // Set a small but non-zero value CHANGED TO BE MORE ACCURATE
-    }
-    float armSpeed = (tuningVariableArm / currentRadius); 
-    float beltSpeed = (tuningVariableBelt / currentRadius) * sqrt(sq(desiredSpeed)-(sq(armSpeed))); 
     
+    // Ensure currentRadius is not zero to avoid division by zero
+    if (currentRadius == 0) {
+      currentRadius = 0.0001;  // Set a small but non-zero value CHANGED TO BE MORE ACCURATE
+    }
+    float armSpeed = (tuningVariableArm / currentRadius);
+    float beltSpeed = (tuningVariableBelt / currentRadius) * sqrt(sq(shearSpeed) - (sq(armSpeed)));
+
     /* Calculate the current angle of the dish based on its steps
     float currentAngle = beltStepper.currentPosition() * (360.0 / stepsPerRevolution);  // Convert steps to degrees
 
@@ -460,10 +464,10 @@ void loop() {
 
     // Convert angular velocity to steps per second for the belt stepper
     float beltStepperSpeed = angularVelocity * stepsPerRevolution / (2 * PI);  // Convert rad/s to steps/s
-*/  
+*/
     // Update the speed of the arm and belt steppers to maintain constant shear rate
-    armStepper.setSpeed(armSpeed);  // Convert mm/s to steps/s for arm stepper
-    beltStepper.setSpeed(beltSpeed);        // Set speed for belt stepper
+    armStepper.setSpeed(armSpeed);    // Convert mm/s to steps/s for arm stepper
+    beltStepper.setSpeed(beltSpeed);  // Set speed for belt stepper
 
     // Move the steppers based on the calculated speeds
     armStepper.runSpeedToPosition();
@@ -475,9 +479,9 @@ void loop() {
     // spiral animation
     if (counterSpeedUpdates > 1000 && running) {
 
-      
+
       // Calculate the x, y coordinates of the next dot in the spiral
-      int x = SCREEN_WIDTH / 2 + (cos(angle) * angle * radiusIncrement); // FIX THIS !!!!!
+      int x = SCREEN_WIDTH / 2 + (cos(angle) * angle * radiusIncrement);  // FIX THIS !!!!!
       int y = SCREEN_HEIGHT / 2 + spiralVerticalOffset + (sin(angle) * angle * radiusIncrement);
 
       // Draw the dot
@@ -496,24 +500,30 @@ void loop() {
       }
 
       counterSpeedUpdates = 0;
-      
-    // print statistics
-       // Get the current positions of the motors
-    long armPosition = armStepper.currentPosition();        // Current position of arm stepper (steps)
-    long plungerPosition = plungerStepper.currentPosition(); // Current position of plunger stepper (steps)
-    long beltPosition = beltStepper.currentPosition();      // Current position of belt stepper (steps)
-    
 
-    // Output the motor positions and speeds
-    //Serial.print(F("Arm Position: ")); Serial.print(armPosition); Serial.print(F(" steps, "));
-    
-    //Serial.print(F("Plunger Position: ")); Serial.println(plungerPosition); Serial.println(F(" steps"));
+      // print statistics
+      // Get the current positions of the motors
+      long armPosition = armStepper.currentPosition();          // Current position of arm stepper (steps)
+      long plungerPosition = plungerStepper.currentPosition();  // Current position of plunger stepper (steps)
+      long beltPosition = beltStepper.currentPosition();        // Current position of belt stepper (steps)
 
-    //Serial.print(F("Belt Position: ")); Serial.print(beltPosition); Serial.print(F(" steps, "));
-    //Serial.print(F("ArmSpeed: ")); Serial.print(armSpeed); Serial.println(F(" steps/s, "));
 
-    //Serial.print(F("BeltSpeed: ")); Serial.print(beltSpeed); Serial.println(F(" step/s, "));
-    Serial.print(armPosition); Serial.print(F(";")); Serial.print(beltPosition); Serial.print(F(";")); Serial.print(armSpeed); Serial.print(F(";")); Serial.println(beltSpeed);
+      // Output the motor positions and speeds
+      //Serial.print(F("Arm Position: ")); Serial.print(armPosition); Serial.print(F(" steps, "));
+
+      //Serial.print(F("Plunger Position: ")); Serial.println(plungerPosition); Serial.println(F(" steps"));
+
+      //Serial.print(F("Belt Position: ")); Serial.print(beltPosition); Serial.print(F(" steps, "));
+      //Serial.print(F("ArmSpeed: ")); Serial.print(armSpeed); Serial.println(F(" steps/s, "));
+
+      //Serial.print(F("BeltSpeed: ")); Serial.print(beltSpeed); Serial.println(F(" step/s, "));
+      Serial.print(armPosition);
+      Serial.print(F(";"));
+      Serial.print(beltPosition);
+      Serial.print(F(";"));
+      Serial.print(armSpeed);
+      Serial.print(F(";"));
+      Serial.println(beltSpeed);
     }
   }
 }
