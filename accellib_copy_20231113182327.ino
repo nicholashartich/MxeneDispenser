@@ -81,9 +81,10 @@ bool booting = true;  // nano was just powered up
 // TODO: CONFIGURATION section
 
 // define initial speeds of motors (after power up)
-const int armBootSpeed = 20;
+const int armBootSpeed = 50;
 const int plungerBootSpeed = 50;
 const int beltBootSpeed = 20;
+const int plungerRunSpeed = -10; 
 
 
 
@@ -94,12 +95,12 @@ const float mmPerStep = 0.1;         // Movement in mm per step for the extruder
 
 
 
-const float tuningVariableBelt = .1;  // Tuning variable for the belt motor
+const float tuningVariableBelt = 1.0;  // Tuning variable for the belt motor
 
-const float tuningConstant = 0.8;  // Tuning variable for additional adjustment
+const float tuningConstant = 1.0;  // Tuning variable for additional adjustment
 // constants for belt speed calculations
 const float shearSpeed = 200.0;
-const float coilSpacing = 0.05;  // Desired spacing between spiral arms in mm
+const float coilSpacing = 0.10;  // Desired spacing between spiral arms in mm
 const float tuningVariableArm = shearSpeed * coilSpacing * tuningConstant;
 
 
@@ -165,13 +166,13 @@ void setup() {
   armStepper.setMaxSpeed(armBootSpeed);  // 60 RPM in steps per second
   armStepper.setSpeed(armBootSpeed);     // Constant speed
   armStepper.setAcceleration(100000);
-  armStepper.moveTo(-16000);  // reverse to a far away target position
+  armStepper.moveTo(16000);  // reverse to a far away target position
 
   // Plunger stepper setup
   plungerStepper.setMaxSpeed(plungerBootSpeed);  // 600 RPM in steps per second
   plungerStepper.setSpeed(plungerBootSpeed);     // Constant speed
   plungerStepper.setAcceleration(100000);
-  plungerStepper.moveTo(+16000);  // forward to a far away target position (towards center)
+  plungerStepper.moveTo(16000);  // forward to a far away target position (towards center)
 
   // Belt motor setup
   beltStepper.setMaxSpeed(beltBootSpeed);  // 120 RPM in steps per second
@@ -478,14 +479,13 @@ void loop() {
       // this may be totally wrong, because there may be a ratio in the hydraulic system
 
 
-      plungerStepper.setMaxSpeed(2.54);
-      plungerStepper.setSpeed(2.54);
+      plungerStepper.setAcceleration(10000);
       plungerStepper.moveTo(-500000);  //same as plunger calculate how far to travel
 
 
       armStepper.setAcceleration(10000);  // Set some acceleration, make this high, so that stepper reafhes speed quickly
       // travel 10cm i.e. 10000 steps
-      armStepper.moveTo(500000);
+      armStepper.moveTo(-500000);
     }
 
 
@@ -535,8 +535,8 @@ void loop() {
     armStepper.setMaxSpeed(armSpeed); 
     beltStepper.setSpeed(beltSpeed);  // Set speed for belt stepper
     beltStepper.setMaxSpeed(beltSpeed);  // Set speed for belt stepper
-    plungerStepper.setSpeed(2.54);
-    plungerStepper.setMaxSpeed(2.54);
+    plungerStepper.setSpeed(plungerRunSpeed);
+    plungerStepper.setMaxSpeed(plungerRunSpeed);
 
     // Move the steppers based on the calculated speeds
     armStepper.runSpeed();//ToPosition();
